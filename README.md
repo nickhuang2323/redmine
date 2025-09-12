@@ -28,28 +28,23 @@
 
 ## 🚀 快速開始
 
-### 方法一：使用自動安裝腳本 (推薦)
+### 統一啟動方式 (推薦)
 
-1. **執行自動安裝**
+**最簡單的開始方式：**
 ```bash
-# Windows
+# Windows 用戶
 start.bat
-# 選擇選項 1 進行安裝
-
-# 或直接執行
-python install.py
 ```
 
-2. **開始使用**
-```bash
-# Windows
-start.bat
+`start.bat` 提供完整的功能選單：
+1. **安裝檢查** - 自動安裝和檢查所有依賴套件
+2. **完整功能** - 進階用戶的完整爬蟲功能
+3. **測試功能** - PDF 檔名測試
+4. **說明文件** - 查看架構說明
 
-# 或直接執行
-python main.py
-```
+### 手動安裝 (可選)
 
-### 方法二：手動安裝
+如果您偏好手動控制安裝過程：
 
 #### 步驟 1: 安裝 Python 依賴
 
@@ -76,34 +71,6 @@ sudo apt-get update
 sudo apt-get install wkhtmltopdf
 ```
 
-#### 步驟 3: 配置設定
-
-1. **複製範例配置**
-```bash
-cp config_example.json config.json
-```
-
-2. **編輯配置檔案**
-```json
-{
-  "redmine": {
-    "base_url": "https://your-redmine-server.com",
-    "request_delay": 1.0,
-    "timeout": 30,
-    "max_retries": 3
-  },
-  "paths": {
-    "output_dir": "redmine_output",
-    "pdf_dir": "pdfs",
-    "attachments_dir": "attachments"
-  },
-  "pdf": {
-    "page_size": "A4",
-    "wkhtmltopdf_path": "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"
-  }
-}
-```
-
 ## 📖 使用指南
 
 ### 獲取 Session Cookie
@@ -118,59 +85,29 @@ cp config_example.json config.json
 
 ### 執行方式
 
-#### 1. 快速啟動 (推薦新手)
-```bash
-python quick_start_v2.py
-```
-- 互動式介面
-- 逐步引導設定
-- 適合第一次使用
-
-#### 2. 批次啟動工具
+#### 1. 統一啟動入口 (推薦)
 ```bash
 # Windows
 start.bat
 ```
 提供多種選項：
 - 安裝/檢查相依性
-- 測試新架構
-- 快速啟動爬蟲
-- 完整功能爬蟲
+- 快速啟動爬蟲 (適合新手)
+- 完整功能爬蟲 (進階設定)
 - PDF 檔名測試
 - 開啟架構說明
 
-#### 3. 完整功能版本
+**選項說明：**
+- **選項 1**: 安裝和檢查系統相依性
+- **選項 2**: 快速啟動 - 互動式介面，逐步引導設定
+- **選項 3**: 完整功能 - 支援進階設定和批次處理
+- **選項 4**: PDF 檔名測試
+- **選項 5**: 查看架構文件
+
+#### 2. 直接執行 (進階用戶)
+如果您已經熟悉系統，也可以直接執行：
 ```bash
-python main_v2.py
-```
-- 支援進階設定
-- 批次處理多個 Issues
-- 詳細的日誌記錄
-
-#### 4. 程式化呼叫
-```python
-import asyncio
-from src.infrastructure.factories.crawler_factory import crawler_factory
-from src.domain.value_objects.common import CrawlRequest, FilePath
-
-async def main():
-    # 建立爬蟲服務
-    crawler = crawler_factory.create_crawler_service(
-        session_cookie="your_session_cookie_here"
-    )
-    
-    # 建立爬取請求
-    request = CrawlRequest(
-        issue_numbers=["12345", "67890"],
-        output_directory=FilePath("output")
-    )
-    
-    # 執行爬取
-    result = await crawler.crawl_issues(request)
-    print(f"處理了 {result.total_processed} 個 Issues")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+python main.py
 ```
 
 ## 🔧 配置選項
@@ -214,7 +151,7 @@ redmine_output/
 
 ### 執行架構測試
 ```bash
-python test_new_architecture.py
+python example_usage.py
 ```
 
 ### 執行 PDF 命名測試
@@ -313,4 +250,4 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
 ---
 
-**快速開始**: 執行 `start.bat` (Windows) 或 `python install.py` 開始使用！
+**快速開始**: 執行 `start.bat` 選擇您需要的功能！
