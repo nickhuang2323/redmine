@@ -45,7 +45,7 @@
 - `quick_start.py` - 快速啟動程式
 - `redmine_crawler.py` - 舊版爬蟲（被 example_usage.py 使用）
 - `example_usage.py` - 使用範例
-- `config.py` - 配置檔案
+-- `config.py` - 已移除（已改用 `src/infrastructure/config/settings.py` 的 ConfigManager 單例）
 
 ### 工具檔案
 - `git_issue_extractor_silent.py` - Git Issue 編號提取工具（被 start.bat 使用）

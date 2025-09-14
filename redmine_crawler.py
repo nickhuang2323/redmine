@@ -8,7 +8,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import pdfkit
 from typing import List, Optional
-from config import Config
+from src.infrastructure.config.settings import config as settings_config
 
 class RedmineCrawler:
     def __init__(self, session_cookie: str = "", output_dir: Optional[str] = None):
@@ -19,9 +19,9 @@ class RedmineCrawler:
             session_cookie: _redmine_session cookie 值
             output_dir: 輸出目錄，若未指定則使用預設值
         """
-        self.base_url = Config.REDMINE_BASE_URL
+        self.base_url = settings_config.redmine.base_url
         self.session = requests.Session()
-        self.output_dir = Path(output_dir or Config.OUTPUT_DIR)
+        self.output_dir = Path(output_dir or settings_config.paths.output_dir)
         
         # 設定 session cookie
         if session_cookie:
@@ -35,7 +35,7 @@ class RedmineCrawler:
         
         # 設定請求標頭
         self.session.headers.update({
-            'User-Agent': Config.USER_AGENT,
+            'User-Agent': settings_config.redmine.user_agent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -48,8 +48,8 @@ class RedmineCrawler:
     
     def _create_directories(self):
         """建立必要的目錄結構"""
-        self.pdf_dir = self.output_dir / Config.PDF_DIR
-        self.attachments_dir = self.output_dir / Config.ATTACHMENTS_DIR
+        self.pdf_dir = self.output_dir / settings_config.paths.pdf_dir
+        self.attachments_dir = self.output_dir / settings_config.paths.attachments_dir
         
         self.pdf_dir.mkdir(parents=True, exist_ok=True)
         self.attachments_dir.mkdir(parents=True, exist_ok=True)
@@ -87,7 +87,7 @@ class RedmineCrawler:
                     
                 # 避免請求過於頻繁
                 if i < len(issue_numbers):  # 最後一個不需要等待
-                    time.sleep(Config.REQUEST_DELAY)
+                    time.sleep(settings_config.redmine.request_delay)
                     
             except Exception as e:
                 print(f"❌ 處理單號 {issue_num} 時發生錯誤: {e}")
@@ -227,16 +227,20 @@ class RedmineCrawler:
             html_str = html_str.replace('src="/', f'src="{self.base_url}/')
             
             # 設定 PDF 選項
-            options = Config.PDF_OPTIONS.copy()
+            # use PDF options from settings; merge cookie
+            options = settings_config.get_pdf_options()
+            # pdfkit expects cookie as dict in options when using from_string
+            # preserve previous behavior by adding a cookie entry
+            options = {**options}
             options['cookie'] = [('_redmine_session', self.session.cookies.get('_redmine_session', ''))]
             
             print(f"    正在生成 PDF: {pdf_path.name}")
             
             # 設定 wkhtmltopdf 配置
-            config = pdfkit.configuration(wkhtmltopdf=Config.WKHTMLTOPDF_PATH)
+            pdf_config = pdfkit.configuration(wkhtmltopdf=settings_config.pdf.wkhtmltopdf_path)
             
             # 轉換為 PDF
-            pdfkit.from_string(html_str, str(pdf_path), options=options, configuration=config)
+            pdfkit.from_string(html_str, str(pdf_path), options=options, configuration=pdf_config)
             
             # 檢查檔案是否成功生成
             if pdf_path.exists() and pdf_path.stat().st_size > 0:
@@ -295,7 +299,7 @@ class RedmineCrawler:
             print(f"目標 URL: {self.base_url}")
             print(f"User-Agent: {self.session.headers.get('User-Agent', 'None')}")
             
-            response = self.session.get(self.base_url, timeout=Config.TIMEOUT)
+            response = self.session.get(self.base_url, timeout=settings_config.redmine.timeout)
             response.raise_for_status()
             
             print(f"回應狀態碼: {response.status_code}")

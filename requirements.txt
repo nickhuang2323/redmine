@@ -4,8 +4,7 @@ requests==2.31.0
 beautifulsoup4==4.12.2
 pdfkit==1.0.0
 
-# 新架構依賴
-aiohttp==3.8.5
+aiohttp>=3.12.15
 aiofiles==23.2.1
 
 # 開發和測試依賴

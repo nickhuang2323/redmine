@@ -33,7 +33,7 @@
 **最簡單的開始方式：**
 ```bash
 # Windows 用戶
-start.bat
+./start.bat
 ```
 
 `start.bat` 提供完整的功能選單：
@@ -130,7 +130,9 @@ export WKHTMLTOPDF_PATH="/usr/local/bin/wkhtmltopdf"
 ```
 
 ### JSON 配置檔案
-詳細的配置選項請參考 `config_example.json`
+詳細的配置選項請參考 `config_example.json`。
+備註：專案已統一使用 `src/infrastructure/config/settings.py` 中的 `ConfigManager` 單例 `config` 作為主要設定來源，
+你可以透過編輯 `config_example.json` 並命名為 `config.json` 放在專案根目錄，或直接使用 `ConfigManager` 中的預設與環境變數覆蓋。
 
 ## 📁 輸出結構
 
