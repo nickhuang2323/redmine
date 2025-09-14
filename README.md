@@ -20,7 +20,7 @@
 
     3-4. 將該專案移至 py-project 資料夾中
 
-    3-5.  wkhtmltopdf，執行專案中的 redmine/wkhtmltox-0.12.6-1.msvc2015-win64.exe
+    3-5. 安裝 wkhtmltopdf，執行專案中的 redmine/wkhtmltox-0.12.6-1.msvc2015-win64.exe
 
     3-6. 用 command 執行 ./start.bat
 
