@@ -27,7 +27,7 @@
     3-7. 執行 1，進行相關套件安裝
 
 
-### 二、取得檔案單號字串
+### 二、取得檔案 Git History 相關的 Redmine 單號
 
 1. 用 command 執行 ./start.bat
 2. 執行 2，從 Git History Issue 編號提取
