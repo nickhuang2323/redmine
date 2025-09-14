@@ -45,8 +45,23 @@ class WkhtmltopdfPdfRepository(PdfRepository):
             # 設定 PDF 選項
             options = config.get_pdf_options()
             
-            # 設定 wkhtmltopdf 配置
-            pdf_config = pdfkit.configuration(wkhtmltopdf=config.pdf.wkhtmltopdf_path)
+            # 設定 wkhtmltopdf/wkhtmltoimage 配置
+            # 先嘗試使用設定中的路徑，若不存在則在打包的資源目錄 (_MEIPASS) 中尋找 wkhtmltoimage 或 wkhtmltopdf
+            wk_path = config.pdf.wkhtmltopdf_path
+            # 如果被 PyInstaller 打包，_MEIPASS 會包含 add-data 的資源；檢查該位置下的 extras/wkhtmltopdf
+            import sys
+            base = getattr(sys, '_MEIPASS', None)
+            if base:
+                # 預期我們會把整個 extras/wkhtmltopdf 資料夾加到可執行檔中
+                candidate = Path(base) / 'extras' / 'wkhtmltopdf' / 'wkhtmltoimage.exe'
+                if candidate.exists():
+                    wk_path = str(candidate)
+                else:
+                    candidate2 = Path(base) / 'extras' / 'wkhtmltopdf' / 'wkhtmltopdf.exe'
+                    if candidate2.exists():
+                        wk_path = str(candidate2)
+
+            pdf_config = pdfkit.configuration(wkhtmltopdf=wk_path)
             
             # 生成 PDF
             pdfkit.from_string(

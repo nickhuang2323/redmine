@@ -26,6 +26,69 @@ import re
 import platform
 
 
+def bundled_path(*path_parts):
+    """回傳在 PyInstaller single-file（frozen）或開發環境下的資源實際路徑字串。
+
+    - frozen: 使用 sys._MEIPASS
+    - 否則使用本模組所在目錄作為 base
+    """
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        return os.path.join(base, *path_parts)
+    try:
+        return str(Path(__file__).resolve().parent.joinpath(*path_parts))
+    except Exception:
+        return os.path.join(os.getcwd(), *path_parts)
+
+
+def find_requirements_file(path_hint: str = 'requirements.txt') -> Path | None:
+    """嘗試在多個位置尋找 requirements 檔案：
+    1) 如果傳入為絕對路徑，直接檢查
+    2) 目前工作目錄 (cwd)
+    3) 安裝腳本所在的專案根目錄（通常在 repo 根）
+    4) PyInstaller 解壓的臨時目錄 sys._MEIPASS（若存在）
+
+    回傳找到的 Path 物件或 None。
+    """
+    from pathlib import Path as _Path
+    candidates = []
+    hint = _Path(path_hint)
+
+    # 若使用者提供絕對路徑，先檢查
+    if hint.is_absolute():
+        candidates.append(hint)
+    else:
+        # 當前工作目錄
+        candidates.append(_Path.cwd() / hint)
+        # 腳本所在目錄（install.py 通常位於專案根）
+        try:
+            repo_root = _Path(__file__).resolve().parent
+            candidates.append(repo_root / hint)
+        except Exception:
+            pass
+
+        # PyInstaller 單檔 exe 的暫存路徑
+        try:
+            meipass = getattr(sys, '_MEIPASS', None)
+            if meipass:
+                candidates.append(_Path(meipass) / hint)
+                # 也嘗試在 meipass 的多個常見位置找尋，例如 base/requirements.txt 與 base/src/requirements.txt
+                candidates.append(_Path(meipass) / 'requirements.txt')
+                candidates.append(_Path(meipass) / 'src' / hint)
+                candidates.append(_Path(meipass) / 'extras' / 'wkhtmltopdf' / hint)
+        except Exception:
+            pass
+
+    for c in candidates:
+        try:
+            if c.exists():
+                return c
+        except Exception:
+            continue
+
+    return None
+
+
 def is_windows() -> bool:
     return os.name == 'nt'
 
@@ -212,6 +275,7 @@ def install_packages(requirements_file: str = 'requirements.txt', prefer_binary:
 def check_wkhtmltopdf(custom_path: str = None) -> (bool, str):
     """檢查 wkhtmltopdf 是否可用。回傳 (bool, path_or_message)。"""
     import shutil
+    import sys
 
     candidates = []
     # 優先使用傳入的自訂路徑
@@ -227,11 +291,63 @@ def check_wkhtmltopdf(custom_path: str = None) -> (bool, str):
     if found:
         candidates.append(found)
 
+    # 若此應用被 PyInstaller 打包，_MEIPASS 會包含被 add-data 的資源；嘗試在內嵌資源中尋找 wkhtmltopdf 或 wkhtmltoimage
+    try:
+        base = getattr(sys, '_MEIPASS', None)
+        if base:
+            # 列出 _MEIPASS 下的檔案（debug 幫助），若路徑太大則只列出相關子目錄
+            try:
+                entries = list(Path(base).rglob('*wkhtml*'))
+                if entries:
+                    print(f"_MEIPASS contains possible wkhtml files: {[str(p) for p in entries]}")
+            except Exception:
+                pass
+
+            # 常見的打包情境：把 wkhtmltopdf 放在 extras/wkhtmltopdf 或 extras/wkhtmltopdf/bin
+            candidates.extend([
+                os.path.join(base, 'extras', 'wkhtmltopdf', 'wkhtmltoimage.exe'),
+                os.path.join(base, 'extras', 'wkhtmltopdf', 'wkhtmltopdf.exe'),
+                os.path.join(base, 'extras', 'wkhtmltopdf', 'bin', 'wkhtmltopdf.exe'),
+                os.path.join(base, 'extras', 'wkhtmltopdf', 'bin', 'wkhtmltoimage.exe'),
+                os.path.join(base, 'wkhtmltopdf.exe'),
+                os.path.join(base, 'wkhtmltoimage.exe'),
+                os.path.join(base, 'wkhtmltopdf'),
+            ])
+            # 也嘗試使用 bundled_path 工具（若此腳本被打包時能回傳正確路徑）
+            try:
+                candidates.append(bundled_path('extras', 'wkhtmltopdf', 'bin', 'wkhtmltopdf.exe'))
+                candidates.append(bundled_path('extras', 'wkhtmltopdf', 'bin', 'wkhtmltoimage.exe'))
+                candidates.append(bundled_path('extras', 'wkhtmltopdf', 'wkhtmltopdf.exe'))
+            except Exception:
+                pass
+            # 也檢查 exe 所在目錄（處理一目錄打包或在 exe 同目錄放置資源的情況）
+            try:
+                exe_dir = Path(sys.executable).resolve().parent
+                exe_candidates = [
+                    exe_dir / 'extras' / 'wkhtmltopdf' / 'wkhtmltopdf.exe',
+                    exe_dir / 'extras' / 'wkhtmltopdf' / 'bin' / 'wkhtmltopdf.exe',
+                    exe_dir / 'wkhtmltopdf.exe',
+                    exe_dir / 'wkhtmltoimage.exe',
+                ]
+                for p in exe_candidates:
+                    candidates.append(str(p))
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     # 常見預設安裝路徑（Windows）
     if is_windows():
         candidates.extend([
+            # legacy: some installers put the exe directly under Program Files\wkhtmltopdf\
+            r"C:\\Program Files\\wkhtmltopdf\\wkhtmltopdf.exe",
+            r"C:\\Program Files (x86)\\wkhtmltopdf\\wkhtmltopdf.exe",
+            # or under a bin subfolder
             r"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe",
             r"C:\\Program Files (x86)\\wkhtmltopdf\\bin\\wkhtmltopdf.exe",
+            # also check common sibling executable wkhtmltoimage
+            r"C:\\Program Files\\wkhtmltopdf\\wkhtmltoimage.exe",
+            r"C:\\Program Files (x86)\\wkhtmltopdf\\wkhtmltoimage.exe",
         ])
 
     # 容器與 Linux 常見路徑
@@ -355,9 +471,26 @@ def main():
                 return success
         return False
 
-    req_path = Path(args.requirements_file)
-    if not req_path.exists():
-        print(f"❌ 找不到 requirements 檔案: {req_path}")
+    # 嘗試解析 requirements 檔案的實際路徑（支援 PyInstaller 單檔 exe）
+    req_path = None
+    try:
+        req_path = find_requirements_file(args.requirements_file)
+    except Exception:
+        req_path = None
+
+    if not req_path:
+        # 顯示 debug 候選位置以協助診斷
+        print(f"❌ 找不到 requirements 檔案 (嘗試過 args: {args.requirements_file})")
+        print("請確認檔案存在於下列位置之一：")
+        print(f"  - 當前工作目錄: {Path.cwd()}")
+        try:
+            print(f"  - 此模組 (__file__) 所在目錄: {Path(__file__).resolve().parent}")
+        except Exception:
+            pass
+        try:
+            print(f"  - PyInstaller _MEIPASS: {getattr(sys, '_MEIPASS', None)}")
+        except Exception:
+            pass
         return False
 
     ok = install_packages(requirements_file=str(req_path), prefer_binary=args.prefer_binary)

@@ -117,5 +117,14 @@ def sync_main():
         sys.exit(1)
 
 
+def run_main():
+    """以函式形式執行主程式並回傳布林結果（適合被匯入呼叫）"""
+    try:
+        return asyncio.run(main())
+    except Exception as e:
+        print(f"❌ 執行 run_main 發生錯誤: {e}")
+        return False
+
+
 if __name__ == "__main__":
     sync_main()

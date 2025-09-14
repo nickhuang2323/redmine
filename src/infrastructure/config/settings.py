@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from dataclasses import dataclass, field
+import shutil
+import sys
 
 
 @dataclass
@@ -43,7 +45,8 @@ class PdfConfig:
     javascript_delay: int = 1000
     enable_local_file_access: bool = True
     no_outline: bool = True
-    wkhtmltopdf_path: str = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+    # 預設為可執行檔名稱，讓系統可透過 PATH 或外部設定 (WKHTMLTOPDF_PATH) 指定完整路徑
+    wkhtmltopdf_path: str = "wkhtmltopdf.exe"
 
 
 @dataclass
@@ -226,9 +229,75 @@ class ConfigManager:
         """
         errors = []
         
-        # 驗證 wkhtmltopdf 路徑
-        if not Path(self._pdf_config.wkhtmltopdf_path).exists():
-            errors.append(f"wkhtmltopdf 路徑不存在: {self._pdf_config.wkhtmltopdf_path}")
+        # 驗證 wkhtmltopdf / wkhtmltoimage 路徑，支援三種情境：
+        # 1) 使用者提供絕對或相對路徑 -> 直接檢查檔案是否存在
+        # 2) 若只提供可執行檔名稱（如 wkhtmltopdf.exe） -> 嘗試透過 PATH 搜尋 (shutil.which)
+        # 3) 若應用被 PyInstaller 打包，嘗試檢查 sys._MEIPASS 下的資源以及常見 Program Files 路徑
+        wk_value = str(self._pdf_config.wkhtmltopdf_path)
+        wk_path = Path(wk_value)
+        found = False
+
+        # 1) 若為具體路徑（包含目錄分隔符或為絕對路徑），直接檢查
+        if wk_path.is_absolute() or (os.sep in wk_value) or ('/' in wk_value):
+            wk_alternative = wk_path.with_name('wkhtmltoimage.exe')
+            if wk_path.exists() or wk_alternative.exists():
+                found = True
+        else:
+            # 2) 嘗試透過 PATH 搜尋
+            if shutil.which(wk_value) or shutil.which('wkhtmltoimage.exe') or shutil.which('wkhtmltoimage'):
+                found = True
+
+            # 3) 嘗試檢查 PyInstaller 的 _MEIPASS 或常見 Program Files 路徑
+            if not found:
+                try:
+                    meipass = getattr(sys, '_MEIPASS', None)
+                    if meipass:
+                        meipass_candidates = [
+                            Path(meipass) / 'extras' / 'wkhtmltopdf' / 'wkhtmltopdf.exe',
+                            Path(meipass) / 'extras' / 'wkhtmltopdf' / 'bin' / 'wkhtmltopdf.exe',
+                            Path(meipass) / 'wkhtmltopdf.exe',
+                            Path(meipass) / 'wkhtmltoimage.exe',
+                        ]
+                        for c in meipass_candidates:
+                            if c.exists():
+                                found = True
+                                break
+                except Exception:
+                    pass
+
+            # 再嘗試一些常見安裝位置（Windows）
+            if not found and os.name == 'nt':
+                common_paths = [
+                    Path(r"C:\Program Files\wkhtmltopdf\wkhtmltopdf.exe"),
+                    Path(r"C:\Program Files (x86)\wkhtmltopdf\wkhtmltopdf.exe"),
+                    Path(r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"),
+                    Path(r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe"),
+                    Path(r"C:\Program Files\wkhtmltopdf\wkhtmltoimage.exe"),
+                    Path(r"C:\Program Files (x86)\wkhtmltopdf\wkhtmltoimage.exe"),
+                ]
+                for p in common_paths:
+                    if p.exists():
+                        found = True
+                        break
+                # 若仍未找到，檢查可執行檔所在目錄（打包成 exe 時，資源可能與 exe 同目錄或子目錄）
+                if not found:
+                    try:
+                        exe_dir = Path(sys.executable).resolve().parent
+                        exe_candidates = [
+                            exe_dir / 'extras' / 'wkhtmltopdf' / 'wkhtmltopdf.exe',
+                            exe_dir / 'extras' / 'wkhtmltopdf' / 'bin' / 'wkhtmltopdf.exe',
+                            exe_dir / 'wkhtmltopdf.exe',
+                            exe_dir / 'wkhtmltoimage.exe',
+                        ]
+                        for p in exe_candidates:
+                            if p.exists():
+                                found = True
+                                break
+                    except Exception:
+                        pass
+
+        if not found:
+            errors.append(f"wkhtmltopdf/wkhtmltoimage 無法找到: {self._pdf_config.wkhtmltopdf_path}；請確認已安裝並可從 PATH 存取，或設定 WKHTMLTOPDF_PATH 環境變數或在 pdf.wkhtmltopdf_path 指定正確路徑。")
         
         # 驗證 URL 格式
         if not self._redmine_config.base_url.startswith(('http://', 'https://')):

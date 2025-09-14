@@ -145,49 +145,96 @@ def get_file_path():
     return file_path
 
 
-def main():
-    """主程式"""
+def extract_cli(repo_path=None):
+    """互動 CLI 版：保留原有互動流程"""
     try:
         print_simple_header()
-        
+
         # 取得儲存庫路徑
-        repo_path = get_repo_path()
+        if repo_path is None:
+            repo_path = get_repo_path()
         if not repo_path:
             return
-        
+
         extractor = SilentGitExtractor(repo_path)
         print(f"✅ Git 儲存庫: {repo_path}")
-        
+
         while True:
             # 取得檔案路徑
             file_path = get_file_path()
             if not file_path:
                 continue
-            
+
             # 提取 issue 編號
             print(f"\n🔍 分析檔案: {file_path}")
             issue_numbers = extractor.extract_issue_numbers(file_path)
-            
+
             # 只顯示結果
             if issue_numbers:
                 print(f"📋 Issue 編號: {issue_numbers}")
             else:
                 print("📋 未找到符合格式的 issue 編號")
-            
+
             # 詢問是否繼續
             print("\n" + "-" * 30)
             continue_choice = input("繼續分析其他檔案？(y/n): ").strip().lower()
             if continue_choice not in ['y', 'yes', '']:
                 break
-        
+
         print("\n👋 完成！")
-        
+
     except KeyboardInterrupt:
         print("\n\n⚠️ 用戶中斷操作")
     except Exception as e:
         print(f"\n❌ 程式執行錯誤: {e}")
     finally:
         input("\n按 Enter 鍵結束...")
+
+
+def main(pause_on_exit=True):
+    """非互動主程式入口，供被匯入呼叫。若 pause_on_exit=True，最後會要求按鍵結束以保留視窗（原行為）。"""
+    try:
+        print_simple_header()
+        repo_path = get_repo_path()
+        if not repo_path:
+            return False
+
+        extractor = SilentGitExtractor(repo_path)
+        print(f"✅ Git 儲存庫: {repo_path}")
+
+        while True:
+            file_path = get_file_path()
+            if not file_path:
+                continue
+
+            print(f"\n🔍 分析檔案: {file_path}")
+            issue_numbers = extractor.extract_issue_numbers(file_path)
+
+            if issue_numbers:
+                print(f"📋 Issue 編號: {issue_numbers}")
+            else:
+                print("📋 未找到符合格式的 issue 編號")
+
+            print("\n" + "-" * 30)
+            continue_choice = input("繼續分析其他檔案？(y/n): ").strip().lower()
+            if continue_choice not in ['y', 'yes', '']:
+                break
+
+        print("\n👋 完成！")
+        return True
+
+    except KeyboardInterrupt:
+        print("\n\n⚠️ 用戶中斷操作")
+        return False
+    except Exception as e:
+        print(f"\n❌ 程式執行錯誤: {e}")
+        return False
+    finally:
+        if pause_on_exit:
+            try:
+                input("\n按 Enter 鍵結束...")
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
