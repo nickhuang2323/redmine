@@ -1,6 +1,6 @@
 # Redmine 爬蟲工具 v2.0
 
-一個採用現代分層架構和設計模式的 Redmine Issue 爬蟲工具，可以自動下載 Issue 內容、附件並生成 PDF 報告。
+一個採用現代分層架構和設計模式的 Redmine Issue 爬蟲工具，可以自動下載 Issue 內容、附件並生成 PDF 報告，並將 PDF 報告匯入至 Google NotebookLM 進行相關文件內容查詢。
 
 ## 🚀 快速開始
 
