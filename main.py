@@ -6,6 +6,7 @@
 import asyncio
 import sys
 from pathlib import Path
+import os
 
 # 確保能找到 src 模組
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -44,8 +45,14 @@ async def main():
                 print(f"  - {error}")
             return False
 
-        # 取得 session cookie（這裡需要用戶輸入）
-        session_cookie = input("請輸入 Redmine session cookie (可留空): ").strip()
+        # 取得 session cookie：優先使用配置中的值，若未配置則提示並要求輸入
+        session_cookie = config.redmine.session_cookie if getattr(config, 'redmine', None) and getattr(config.redmine, 'session_cookie', None) else None
+        if session_cookie:
+            # 直接印出從設定讀取到的完整 session cookie
+            print(f"🔒 已從配置讀取 Redmine session cookie: {session_cookie}")
+        else:
+            print("⚠️ 未在配置中找到 Redmine session cookie。建議可透過環境變數 REDMINE_SESSION_COOKIE 或設定檔設定以避免每次輸入。")
+            session_cookie = input("請輸入 Redmine session cookie (可留空): ").strip()
 
         # 取得要爬取的單號
         issue_numbers_input = input("請輸入要爬取的單號 (用逗號分隔): ").strip()

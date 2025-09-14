@@ -19,6 +19,8 @@ class RedmineConfig:
     user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     max_retries: int = 3
     retry_delay: float = 2.0
+    # 可選的 Redmine session cookie，優先以環境變數或設定檔覆蓋
+    session_cookie: str = ""
 
 
 @dataclass
@@ -94,11 +96,12 @@ class ConfigManager:
         self._pdf_config = PdfConfig()
         self._security_config = SecurityConfig()
         self._log_config = LogConfig()
-        
+
+
         # 載入環境變數和配置檔案
         self._load_from_environment()
         self._load_from_file()
-        
+
         self._initialized = True
 
     @property
@@ -260,6 +263,10 @@ class ConfigManager:
                 self._redmine_config.timeout = int(timeout)
             except ValueError:
                 pass
+
+        # Session cookie (可選)
+        if session_cookie := os.getenv('REDMINE_SESSION_COOKIE'):
+            self._redmine_config.session_cookie = session_cookie
         
         # 路徑配置
         if output_dir := os.getenv('REDMINE_OUTPUT_DIR'):
@@ -268,6 +275,34 @@ class ConfigManager:
         # PDF 配置
         if wkhtmltopdf_path := os.getenv('WKHTMLTOPDF_PATH'):
             self._pdf_config.wkhtmltopdf_path = wkhtmltopdf_path
+
+    def _load_dotenv(self) -> None:
+        """簡單的 .env 載入器：讀取專案根目錄的 .env，將變數加入 os.environ（若尚未存在才加入）。
+
+        支援格式：KEY=VALUE，會忽略以 # 開頭的註解與空行。
+        """
+        try:
+            # 嘗試在專案根目錄（工作目錄）尋找 .env
+            dotenv_path = Path('.') / '.env'
+            if not dotenv_path.exists():
+                return
+
+            with dotenv_path.open('r', encoding='utf-8') as f:
+                for raw in f:
+                    line = raw.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    if '=' not in line:
+                        continue
+                    key, val = line.split('=', 1)
+                    key = key.strip()
+                    val = val.strip().strip('"').strip("'")
+                    # 只有在該環境變數尚未被設定時才加入
+                    if key and key not in os.environ:
+                        os.environ[key] = val
+        except Exception:
+            # 不要因為 .env 的讀取失敗而阻斷程序，僅印出簡短警告
+            print('警告: 載入 .env 時發生錯誤，已跳過 .env 讀取。')
 
     def _load_from_file(self) -> None:
         """從檔案載入配置"""

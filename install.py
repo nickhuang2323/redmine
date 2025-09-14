@@ -374,7 +374,7 @@ def main():
         else:
             print(f"❌ {wk_msg}")
 
-    create_new_config_example()
+    # create_new_config_example()
 
     print('\n=== 安裝結果 ===')
     if wk_ok:

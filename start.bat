@@ -23,17 +23,15 @@ REM 顯示選項
 echo 請選擇操作:
 echo.
 echo 1. 安裝/檢查相依性
-echo 2. 完整功能爬蟲
-echo 3. PDF 檔名測試
-echo 4. Git History Issue 編號提取
+echo 2. Git History Issue 編號提取
+echo 3. 將 Redmine 單匯出成 PDF
 echo.
 
-set /p choice="請輸入選項 (1-4): "
+set /p choice="請輸入選項 (1-3): "
 
 if "%choice%"=="1" goto install
-if "%choice%"=="2" goto fullversion
-if "%choice%"=="3" goto pdftest
-if "%choice%"=="4" goto githistory
+if "%choice%"=="2" goto githistory
+if "%choice%"=="3" goto fullversion
 goto invalid
 
 :install
@@ -44,7 +42,7 @@ goto end
 
 :fullversion
 echo.
-echo 啟動完整功能爬蟲...
+echo 啟動 Redmine單匯出成 PDF 流程...
 python main.py
 goto end
 

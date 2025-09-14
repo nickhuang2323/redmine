@@ -2,175 +2,112 @@
 
 一個採用現代分層架構和設計模式的 Redmine Issue 爬蟲工具，可以自動下載 Issue 內容、附件並生成 PDF 報告。
 
-## 🌟 主要特色
-
-- 🏗️ **分層架構**：採用 DDD (領域驅動設計) 三層架構
-- 🎨 **設計模式**：實現多種設計模式 (Singleton, Factory, Repository, Observer)
-- ⚡ **非同步處理**：使用 aiohttp 提升爬取效能
-- 📄 **智慧 PDF 命名**：根據 HTML h2/h3 標籤自動命名 PDF
-- 🔧 **統一配置管理**：支援環境變數和 JSON 配置檔案
-- 📊 **事件驅動**：即時進度追蹤和日誌記錄
-- 🛡️ **錯誤處理**：完善的例外處理和重試機制
-
-## 📋 系統需求
-
-### 必要環境
-- **Python**: 3.7 或更高版本
-- **作業系統**: Windows 10/11, macOS, Linux
-- **網路**: 可存取目標 Redmine 服務器
-
-### 外部工具
-- **wkhtmltopdf**: PDF 生成工具
-  - Windows: [下載連結](https://wkhtmltopdf.org/downloads.html)
-  - macOS: `brew install wkhtmltopdf`
-  - Ubuntu/Debian: `sudo apt-get install wkhtmltopdf`
-  - CentOS/RHEL: `sudo yum install wkhtmltopdf`
-
 ## 🚀 快速開始
 
-### 統一啟動方式 (推薦)
+### 一、建置環境
 
-**最簡單的開始方式：**
-```bash
-# Windows 用戶
-./start.bat
-```
+1. 下載 Python 3.13.7 https://www.python.org/downloads/release/python-3137/
 
-`start.bat` 提供完整的功能選單：
-1. **安裝檢查** - 自動安裝和檢查所有依賴套件
-2. **完整功能** - 進階用戶的完整爬蟲功能
-3. **測試功能** - PDF 檔名測試
-4. **說明文件** - 查看架構說明
+2. 確認安裝的路徑，C:\Users\<user_name>\AppData\Local\Programs\Python\Python313
 
-### 手動安裝 (可選)
+3. 建立 .venv python 開發環境
 
-如果您偏好手動控制安裝過程：
+    3-1. 建立一個資料夾 py-project
 
-#### 步驟 1: 安裝 Python 依賴
+    3-2. 用 command 進入資料夾 cd py-project
 
-```bash
-# 安裝套件
-pip install -r requirements.txt
-```
+    3-3. 執行 C:\Users\<user_name>\AppData\Local\Programs\Python\Python313\python.exe -m venv .venv
 
-#### 步驟 2: 安裝 wkhtmltopdf
+    3-4. 將該專案移至 py-project 資料夾中
 
-**Windows:**
-1. 從 [官方網站](https://wkhtmltopdf.org/downloads.html) 下載 wkhtmltopdf
-2. 安裝到預設位置 `C:\Program Files\wkhtmltopdf\`
-3. 或自訂安裝路徑並在配置中指定
+    3-5.  wkhtmltopdf，執行專案中的 redmine/wkhtmltox-0.12.6-1.msvc2015-win64.exe
 
-**macOS:**
-```bash
-brew install wkhtmltopdf
-```
+    3-6. 用 command 執行 ./start.bat
 
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install wkhtmltopdf
-```
+    3-7. 執行 1，進行相關套件安裝
 
-## 📖 使用指南
 
-### 獲取 Session Cookie
+### 二、取得檔案單號字串
 
-在使用爬蟲之前，需要從瀏覽器獲取 Redmine 的 session cookie：
+1. 用 command 執行 ./start.bat
+2. 執行 2，從 Git History Issue 編號提取
+3. 設定 MoneyIn 專案根目錄位置，ex: D:\MoneyIn
+4. 設定 要擷取哪個檔案的 Git History，ex: D:\MoneyIn\...\XXController.cs
+5. 複製單號 ex:12345,67890，先找記事本貼著
 
-1. 在瀏覽器中登入 Redmine
-2. 開啟開發者工具 (F12)
-3. 前往 Network 或 Application 標籤
-4. 找到 `_redmine_session` cookie 值
-5. 複製 cookie 值用於爬蟲設定
+### 三、將相關單號的網站內容匯出成 PDF
 
-### 執行方式
+1. 獲取 Session Cookie
 
-#### 1. 統一啟動入口 (推薦)
-```bash
-# Windows
-start.bat
-```
-提供多種選項：
-- 安裝/檢查相依性
-- 快速啟動爬蟲 (適合新手)
-- 完整功能爬蟲 (進階設定)
-- PDF 檔名測試
-- 開啟架構說明
+    在使用爬蟲之前，需要從瀏覽器獲取 Redmine 的 session cookie：
+    * 在瀏覽器中登入 Redmine
+    * 開啟開發者工具 (F12)
+    * 前往 Network 或 Application 標籤
+    * 找到 `_redmine_session` cookie 值
+    * 複製 cookie 值用於爬蟲設定
 
-**選項說明：**
-- **選項 1**: 安裝和檢查系統相依性
-- **選項 2**: 快速啟動 - 互動式介面，逐步引導設定
-- **選項 3**: 完整功能 - 支援進階設定和批次處理
-- **選項 4**: PDF 檔名測試
-- **選項 5**: 查看架構文件
+2. 設定 REDMINE_SESSION_COOKIE 環境變數
 
-#### 2. 直接執行 (進階用戶)
-如果您已經熟悉系統，也可以直接執行：
-```bash
-python main.py
-```
+    * 環境變數設定
 
-## 🔧 配置選項
+      * Linux / macOS
 
-### 環境變數設定
-```bash
-# Redmine 設定
-export REDMINE_BASE_URL="https://your-redmine.com"
-export REDMINE_TIMEOUT="30"
-export REDMINE_REQUEST_DELAY="1.0"
+        ```bash
+        # Redmine 設定
+        export REDMINE_SESSION_COOKIE="_redmine_session"
+        ```
 
-# 路徑設定
-export OUTPUT_DIR="redmine_output"
-export PDF_DIR="pdfs"
-export ATTACHMENTS_DIR="attachments"
+      * Command
+          ```
+          set MY_ENV=test
 
-# PDF 設定
-export PDF_PAGE_SIZE="A4"
-export WKHTMLTOPDF_PATH="/usr/local/bin/wkhtmltopdf"
-```
+          # 永久設定
+          setx MY_ENV "test"
 
-### JSON 配置檔案
-詳細的配置選項請參考 `config_example.json`。
-備註：專案已統一使用 `src/infrastructure/config/settings.py` 中的 `ConfigManager` 單例 `config` 作為主要設定來源，
-你可以透過編輯 `config_example.json` 並命名為 `config.json` 放在專案根目錄，或直接使用 `ConfigManager` 中的預設與環境變數覆蓋。
+          # 查看
+          echo %PATH%
+          ```
 
-## 📁 輸出結構
 
-```
-redmine_output/
-├── pdfs/                          # PDF 檔案
-│   ├── 12345_Issue標題.pdf
-│   └── 67890_另一個Issue.pdf
-└── attachments/                   # 附件檔案
-    ├── 12345/                     # 按 Issue 編號分組
-    │   ├── attachment1.jpg
-    │   └── document.pdf
-    └── 67890/
-        └── screenshot.png
-```
+      * PowerShell
 
-## 🧪 測試
+        ```shell
+        $env:REDMINE_SESSION_COOKIE="test111111"
 
-### 執行架構測試
-```bash
-python example_usage.py
-```
 
-### 執行 PDF 命名測試
-```bash
-python test_pdf_naming.py
-```
+        # 永久設定
+        setx REDMINE_SESSION_COOKIE "test"
 
-### 單元測試 (如果已設定)
-```bash
-pytest tests/
-```
+        # 查看
+        echo $env:REDMINE_SESSION_COOKIE
+        ```
+
+3. 用 command 執行 ./start.bat，執行 3 匯出 PDF 流程
+
+4. 輸入剛複製的爬取的單號，多個單號請用逗號分隔 (例如: 12345,67890)
+
+5. 檔案會輸出至 `redmine_output/` 目錄下
+
+    ```
+    redmine_output/
+    ├── pdfs/                          # PDF 檔案
+    │   ├── 12345_Issue標題.pdf
+    │   └── 67890_另一個Issue.pdf
+    └── attachments/                   # 附件檔案
+        ├── 12345/                     # 按 Issue 編號分組
+        │   ├── attachment1.jpg
+        │   └── document.pdf
+        └── 67890/
+            └── screenshot.png
+    ```
+
 
 ## 🔍 故障排除
 
 ### 常見問題
 
 **1. Python 套件安裝失敗**
+
 ```bash
 # 升級 pip
 pip install --upgrade pip
@@ -197,59 +134,3 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 - 檢查 wkhtmltopdf 是否正常運作：`wkhtmltopdf --version`
 - 確認有足夠的磁碟空間
 - 檢查輸出目錄權限
-
-### 日誌檢查
-
-程式執行時會產生詳細的日誌資訊，包括：
-- 網路請求狀態
-- 檔案下載進度
-- 錯誤訊息和堆疊追蹤
-- 效能統計資料
-
-## 🏗️ 架構說明
-
-此專案採用現代軟體架構設計，詳細說明請參考 [ARCHITECTURE.md](ARCHITECTURE.md)
-
-### 主要架構特色
-- **分層設計**: Application → Domain → Infrastructure
-- **設計模式**: 實現 6 種設計模式
-- **依賴注入**: 鬆耦合的組件設計
-- **事件驅動**: 即時進度追蹤
-- **配置管理**: 統一的設定系統
-
-## 🤝 貢獻指南
-
-1. Fork 此專案
-2. 建立功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交變更 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 開啟 Pull Request
-
-## 📄 授權條款
-
-此專案採用 MIT 授權條款 - 詳見 [LICENSE](LICENSE) 檔案
-
-## 📞 支援與回饋
-
-- 🐛 **問題回報**: [GitHub Issues](https://github.com/your-repo/issues)
-- 💡 **功能建議**: [GitHub Discussions](https://github.com/your-repo/discussions)
-- 📧 **聯絡我們**: your-email@example.com
-
-## 📈 版本紀錄
-
-### v2.0.0 (2024-12-XX)
-- 🎉 全新的分層架構設計
-- ✨ 實現多種設計模式
-- ⚡ 非同步爬蟲處理
-- 📄 智慧 PDF 命名
-- 🔧 統一配置管理
-- 📊 事件驅動架構
-
-### v1.x (歷史版本)
-- 基礎爬蟲功能
-- 簡單的 PDF 生成
-- 單執行緒處理
-
----
-
-**快速開始**: 執行 `start.bat` 選擇您需要的功能！
